@@ -25,10 +25,10 @@ Create a sibling folder next to the user's other products with:
 - AI: the latest fast Gemini model by default. Log the cost of each call.
 - Secrets: noenv.
 - Admin, email and blog: plug into the shared services (see `shared-services`).
-- Pricing: run [`pricing-saas`](https://github.com/thisisamank/pricing-saas) before you set plans.
-- SEO: follow [`saas-seo-playbook`](https://github.com/thisisyashgarg/saas-seo-playbook) from the first public page.
+- Pricing: run `pricing-saas` before you set plans.
+- SEO: follow [`saas-seo-playbook`](../saas-seo-playbook/README.md) from the first public page.
 
-To get these two, follow "External skills" in `product-lifecycle`. For the stages after bootstrap, see `product-lifecycle`.
+Both are submodules of this repo (see "Submodule skills" in `product-lifecycle`). For the stages after bootstrap, see `product-lifecycle`.
 
 ## Step 3: domain
 - When the domain is on the user's Cloudflare account, set it up with wrangler: custom domain, `www` redirect, Email Sending, DMARC, and Email Routing for `support@`, `abuse@` and `security@`.

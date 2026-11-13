@@ -18,7 +18,7 @@ description: Compare AI models on the real product flow, then switch provider sa
 3. Make the related changes: privacy policy (sub-processor list), public pricing docs, the cost table in code.
 4. Log an AI-call event with tokens and cost on every call.
 5. Cut the number of calls where you can.
-6. If the AI cost changes the cost per user, run [`pricing-saas`](https://github.com/thisisamank/pricing-saas) again.
+6. If the AI cost changes the cost per user, run `pricing-saas` again.
 
 ## Defaults
 - The latest fast Gemini model, unless the test shows a better fit.

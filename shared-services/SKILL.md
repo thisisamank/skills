@@ -14,7 +14,7 @@ When one person runs several products, build common parts once and let each prod
 | Email | One notification Worker that owns sending, fallback provider and suppression | The product calls it through the interface that the service documents. |
 | Blog writer | Lives in the admin Worker and only drafts. A person publishes. | The product only reads published posts. |
 | Analytics | One project, split by a `product` property | The analytics dashboard complements the admin. Do not copy metrics between them. |
-| Playbooks | [`saas-seo-playbook`](https://github.com/thisisyashgarg/saas-seo-playbook) and [`pricing-saas`](https://github.com/thisisamank/pricing-saas). Get them as "External skills" in `product-lifecycle` says | Follow them. Add new learnings back. |
+| Playbooks | `saas-seo-playbook` and `pricing-saas`, submodules of this repo (see "Submodule skills" in `product-lifecycle`) | Follow them. Add new learnings back. |
 | Task app | The user's to-do app with an MCP server, if connected | Read tasks from it, save deferred work as a task, update tasks with findings. |
 
 ## Rules

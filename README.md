@@ -4,16 +4,17 @@ Small skills for building and running several SaaS products on Cloudflare Worker
 
 Start with `product-lifecycle`. It maps every stage of a product to the skill to use.
 
-Related skills in other repos:
+Two skills are git submodules:
 - [`pricing-saas`](https://github.com/thisisamank/pricing-saas): unit economics, cost at scale, plan tiers, HTML report.
-- [`saas-seo-playbook`](https://github.com/thisisyashgarg/saas-seo-playbook): SEO, AI search, launch sites, ChatGPT and Claude directories.
+- [`saas-seo-playbook`](https://github.com/thisisyashgarg/saas-seo-playbook) (branch `launch-on-claude`): SEO, AI search, launch sites, ChatGPT and Claude directories.
 
-You do not need to install them first. When a skill needs one, the agent looks for it and clones it into `~/.claude/skills/` if it is missing. See "External skills" in `product-lifecycle`.
+Clone with `git clone --recurse-submodules`. In an existing clone, run `git submodule update --init`.
 
 To use one, copy or symlink its folder into `~/.claude/skills/`.
 
 | Skill | Use it when |
 |---|---|
+| pricing-saas | unit economics, cost at scale, plan tiers, HTML report |
 | ste-writing | language rules for every reply and doc |
 | product-lifecycle | idea to launch to growth; which skill at which stage |
 | ship-it | commit, merge, deploy |

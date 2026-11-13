@@ -18,18 +18,18 @@ This skill describes what the user of the product experiences at each stage. It 
 
 To find where a product stands, read PRD.md and SPEC.md, list what is built and what is not, and name the next stage. Report it as two short lists: built and not built.
 
-## External skills
-Two stages use skills from other repos. Before you use one, find it or get it:
-1. Look for it installed: `~/.claude/skills/<name>` or the project's `.claude/skills/<name>`.
-2. Look for a clone next to the current repo (`../<name>`).
-3. If neither exists, clone it: `git clone <url> ~/.claude/skills/<name>`.
+## Submodule skills
+Two skills live in this skills repo as git submodules:
 
-| Name | URL | What it does |
-|---|---|---|
-| `pricing-saas` | https://github.com/thisisamank/pricing-saas | Unit economics, cost at 100 to 1,000,000 users, plan tiers, HTML report |
-| `saas-seo-playbook` | https://github.com/thisisyashgarg/saas-seo-playbook | SEO, AI search, launch sites, ChatGPT and Claude directories |
+| Name | Path in this repo | Source | What it does |
+|---|---|---|---|
+| `pricing-saas` | `../pricing-saas/` | https://github.com/thisisamank/pricing-saas | Unit economics, cost at 100 to 1,000,000 users, plan tiers, HTML report |
+| `saas-seo-playbook` | `../saas-seo-playbook/` | https://github.com/thisisyashgarg/saas-seo-playbook (branch `launch-on-claude`) | SEO, AI search, launch sites, ChatGPT and Claude directories |
 
-Read a playbook chapter from the local copy: `saas-seo-playbook/docs/<chapter>.md`.
+Before you use one:
+1. Open it at its path in this repo.
+2. If the folder is empty, run `git submodule update --init` in the skills repo.
+3. If this skill was installed alone, without the skills repo, clone the source URL into `~/.claude/skills/<name>`.
 
 ## 1. Idea to bootstrap
 - Research the market, rivals and legal points. Check the name and domain.
@@ -71,18 +71,18 @@ Read a playbook chapter from the local copy: `saas-seo-playbook/docs/<chapter>.m
 - Let the user choose plan contents on an approval page.
 - Users can upgrade, downgrade, cancel and see what is left in their quota. The owner can give coupons and change a user's plan.
 - While the payment account waits for verification, give all features free and cap only the costly AI actions.
-- Skill: [`pricing-saas`](https://github.com/thisisamank/pricing-saas) (see External skills).
+- Skill: `pricing-saas`.
 
 ## 8. SEO and launch
 - Remove personal details from public pages. Blog posts use a company author.
 - Follow the SEO playbook in order: foundations, indexing, page programs, blog writer, AI search, off-page, measurement.
 - Make launch assets (logo, gallery images) yourself. Only a demo video needs the user.
 - Promote the user's other products where it helps users.
-- Playbook: [`saas-seo-playbook`](https://github.com/thisisyashgarg/saas-seo-playbook), chapters 1 to 7 (see External skills).
+- Playbook: [`saas-seo-playbook`](../saas-seo-playbook/README.md), chapters 1 to 7 (see Submodule skills).
 
 ## 9. AI app directories
 - Users can use the product from inside Claude and ChatGPT, and they find it in those directories.
-- Skill: `mcp-marketplace-launch`. Playbook: [`saas-seo-playbook` chapter 8](https://github.com/thisisyashgarg/saas-seo-playbook/blob/main/docs/08-ai-app-directories.md).
+- Skill: `mcp-marketplace-launch`. Playbook: [`saas-seo-playbook` chapter 8](../saas-seo-playbook/docs/08-ai-app-directories.md).
 
 ## 10. Evolve (loop)
 - Pick the next features from a feature-gap list or user feedback. Push back on features nobody asked for.

@@ -1,0 +1,7 @@
+[submodule "pricing-saas"]
+	path = pricing-saas
+	url = https://github.com/thisisamank/pricing-saas.git
+[submodule "saas-seo-playbook"]
+	path = saas-seo-playbook
+	url = https://github.com/thisisyashgarg/saas-seo-playbook.git
+	branch = launch-on-claude

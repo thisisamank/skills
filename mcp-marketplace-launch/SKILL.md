@@ -21,7 +21,7 @@ description: Build an MCP server for a product and list it on the Claude and Cha
 
 ## Listings
 - Claude directory, ChatGPT apps (business verification and a domain token), the MCP Registry (`server.json` with a `.well-known` proof), Smithery, Glama, mcp.so.
-- Follow [chapter 8 of `saas-seo-playbook`](https://github.com/thisisyashgarg/saas-seo-playbook/blob/main/docs/08-ai-app-directories.md). Add what you learn back to it.
+- Follow [chapter 8 of `saas-seo-playbook`](../saas-seo-playbook/docs/08-ai-app-directories.md). Add what you learn back to it.
 
 ## Hand back
 - List only the steps that need the user. Number them. Say exactly where to click and what to type, in plain words.
