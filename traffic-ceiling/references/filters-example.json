@@ -1,0 +1,9 @@
+{
+  "competitors": "\\b(docusign|pandadoc|adobe|acrobat|hellosign|dropbox|zoho|signnow|signwell|jotform|smallpdf|ilovepdf|sejda|dochub|pdffiller|signeasy|eversign|foxit|nitro|onespan|yousign|aadhaar|emudhra|dsc)\\b",
+  "other_brands": "\\b(nike|apple|google|linkedin|instagram|facebook|starbucks|spotify|airbnb|uber|amazon|microsoft|canva|figma|netflix|youtube|tiktok|disney|ibm|slack|shopify|hubspot|university of|college of|\\.edu)\\b",
+  "off_topic": "\\b(e?sign ?in|signin|log ?in|google account|gmail|stock|share price|careers?|near me|jobs?|salary|tattoo|celebrity|autograph|signature (style|ideas|font|design)|pdf editor|pdf reader|compress|merge|split|convert)\\b",
+  "clusters": {
+    "e-signature": "\\b(sign|signature|esign|e-sign|signing|signed)\\b",
+    "contract templates": "\\b(agreement|contract|lease|rental|rent|tenancy|nda|non disclosure|confidentiality|offer letter|deed|partnership|consent|form|template|letter|mou|memorandum|proposal|invoice)\\b"
+  }
+}

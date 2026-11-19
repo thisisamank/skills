@@ -12,7 +12,7 @@ When one person runs several products, build common parts once and let each prod
 |---|---|---|
 | Admin | One admin Worker for all products, behind Cloudflare Access, with a folder for each product | Symlink `admin -> ../<admin-repo>` in each product. Read its AGENTS.md before you change it. |
 | Email | One notification Worker that owns sending, fallback provider and suppression | The product calls it through the interface that the service documents. |
-| Blog writer | Lives in the admin Worker and only drafts. A person publishes. | The product only reads published posts. |
+| Blog writer | Own Worker `blog`, like Notify. No public route. Admin reaches it through a service binding. It publishes posts that pass its quality gates. | The product only reads published posts. |
 | Analytics | One project, split by a `product` property | The analytics dashboard complements the admin. Do not copy metrics between them. |
 | Playbooks | `saas-seo-playbook` and `pricing-saas`, submodules of this repo (see "Submodule skills" in `product-lifecycle`) | Follow them. Add new learnings back. |
 | Task app | The user's to-do app with an MCP server, if connected | Read tasks from it, save deferred work as a task, update tasks with findings. |

@@ -23,7 +23,7 @@ Create a sibling folder next to the user's other products with:
 - Payments: Dodo Payments, one brand for each product. All plans in one file.
 - Analytics: one PostHog project for all products, split by a `product` event property.
 - AI: the latest fast Gemini model by default. Log the cost of each call.
-- Secrets: noenv.
+- Secrets: noenv. Run `noenv init`, commit `.noenv` with `[secrets] required` and a `[wrangler]` list, and tell agents to use `noenv exec --` in AGENTS.md (see `noenv-secrets-to-workers`).
 - Admin, email and blog: plug into the shared services (see `shared-services`).
 - Pricing: run `pricing-saas` before you set plans.
 - SEO: follow [`saas-seo-playbook`](../saas-seo-playbook/README.md) from the first public page.

@@ -18,7 +18,7 @@ To use one, copy or symlink its folder into `~/.claude/skills/`.
 | ste-writing | language rules for every reply and doc |
 | product-lifecycle | idea to launch to growth; which skill at which stage |
 | ship-it | commit, merge, deploy |
-| noenv-secrets-to-workers | move a secret to a Worker without printing it |
+| noenv-secrets-to-workers | run commands with secrets and push them to Workers without printing them |
 | flutter-app | Flutter app structure, HTML-first design loop, device testing |
 | ui-design | any UI work or screenshot feedback; runs impeccable |
 | landing-page-inspiration | 15 reference landing pages; pick one for the product |
@@ -33,4 +33,6 @@ To use one, copy or symlink its folder into `~/.claude/skills/`.
 | web-fetch-fallback | 403 on research pages |
 | local-dev-hygiene | ports, local D1, dev server |
 | code-structure-pass | review, ponytail, restructure |
+| low-level-design | how to write code: order of work, objects, APIs, concurrency, tests, pattern triggers |
 | feature-pushback | discuss a feature before building |
+| traffic-ceiling | how much organic traffic a product can reach, and what it is worth; Search Console plus Keyword Planner through the user's browser |

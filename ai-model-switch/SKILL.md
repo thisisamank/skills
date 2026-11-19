@@ -13,7 +13,7 @@ description: Compare AI models on the real product flow, then switch provider sa
 5. Take prices from the vendor's page today, not from memory.
 
 ## Switch
-1. Pipe the new key to the Worker from noenv (see `noenv-secrets-to-workers`).
+1. Save the new key with `noenv secret set`, then push it with `noenv wrangler KEY` (see `noenv-secrets-to-workers`).
 2. Delete the old secret from production. Keep it in local noenv.
 3. Make the related changes: privacy policy (sub-processor list), public pricing docs, the cost table in code.
 4. Log an AI-call event with tokens and cost on every call.

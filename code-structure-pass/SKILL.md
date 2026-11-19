@@ -1,6 +1,6 @@
 ---
 name: code-structure-pass
-description: Review and restructure code to a fixed standard - TypeScript, Next.js on vinext, folders, tokens, explicit states - using the ponytail review. Use when the user asks for a code review, a diff cleanup, a restructure, a Next.js migration, or a hunt for implicit state machines.
+description: Review and restructure code to a fixed standard - TypeScript, Next.js on vinext, folders, tokens, explicit states - using the ponytail review and the low-level-design rules. Use when the user asks for a code review, a diff cleanup, a restructure, a Next.js migration, or a hunt for implicit state machines.
 ---
 
 # Code structure pass
@@ -15,10 +15,13 @@ description: Review and restructure code to a fixed standard - TypeScript, Next.
 
 For Flutter code, use the rules in `flutter-app`.
 
+For logic and object design, `low-level-design` is the standard: order of work, objects, APIs, data structures, concurrency, tests and pattern triggers. Use it when you write code and when you review it. For TypeScript, also read its `references/typescript.md`.
+
 ## Review
 1. Run the `ponytail` review for over-engineering and repetition. Review only the diff when the user asks for that.
-2. Show findings first. Clean up after the user agrees.
-3. Implicit state machines: find status flags and boolean combinations that hide states. List them. Fix them one by one with explicit states and transitions.
+2. Check the code against `low-level-design` and its `references/smells.md`. Report each smell with the fix from that file.
+3. Show findings first. Clean up after the user agrees.
+4. Implicit state machines: find status flags and boolean combinations that hide states. List them. Fix them one by one with explicit states and transitions.
 
 ## Large migrations
 - Plan, get the user's choices (runtime, big-bang or step by step), then let `sonnet` subagents port while you review each part.

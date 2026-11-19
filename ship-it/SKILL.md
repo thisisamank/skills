@@ -20,7 +20,7 @@ description: Commit, merge and deploy with micro commits, a single main branch a
 
 ## Deploy
 1. Apply remote database migrations before the deploy that needs them.
-2. Put new secrets on the Worker before the deploy (see `noenv-secrets-to-workers`).
+2. Push new secrets to the Worker before the deploy with `noenv wrangler KEY…` (see `noenv-secrets-to-workers`). Run deploy commands that need secrets through `noenv exec --`.
 3. Deploy every Worker that the change touches (API, web, admin). Name each one.
 4. Check that production runs the current code. If a deploy looks rolled back, redeploy from the current tree.
 5. Submit changed public pages to IndexNow if the repo supports it.

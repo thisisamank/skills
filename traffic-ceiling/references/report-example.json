@@ -1,0 +1,107 @@
+{
+  "title": "Organic traffic ceiling",
+  "subtitle": "ShareHue and SignKaro, from Google Keyword Planner and Search Console",
+  "date": "2026-11-14",
+  "summary": [
+    "ShareHue is a niche tool with a small search market. Organic alone makes it a modest side income, not a company.",
+    "SignKaro's addressable market is about 25 times larger. If the goal is income from organic traffic, most SEO effort belongs there.",
+    "Every number here is an order of magnitude. Volumes are range midpoints because the Ads account has no spend, and Keyword Planner lists close variants as separate rows."
+  ],
+  "sections": [
+    {
+      "heading": "Method",
+      "numbered": [
+        "Keyword Planner returned 2,400 to 6,700 keyword ideas per product and location from 10 seed terms.",
+        "Rows were removed when they name a competitor (DocuSign, Adobe, Frontify, Canva), another company's brand (Nike brand guidelines), or an unrelated task (logo makers, Google sign-in, PDF editors).",
+        "The remaining rows were grouped by topic and summed.",
+        "Ceiling = monthly searches times click share: 27% at position 1, 11% at position 3, 2.5% averaged over positions 6 to 10."
+      ],
+      "note": "Read position 1 as the hard upper bound and positions 6 to 10 as what a small new site reaches in its first year if it ranks for most of the cluster."
+    },
+    {
+      "heading": "ShareHue",
+      "table": {
+        "columns": ["Cluster", "Location", "Searches per month", "Position 1", "Position 3", "Positions 6 to 10"],
+        "rows": [
+          ["Brand guidelines market", "United States", "161,000", "43,000", "18,000", "4,000"],
+          ["Brand guidelines market", "Worldwide", "617,000", "167,000", "68,000", "15,000"],
+          ["Brand guidelines market", "India", "104,000", "28,000", "11,000", "2,600"],
+          ["Colour tools (hex, rgb, palette)", "United States", "2,370,000", "640,000", "261,000", "59,000"],
+          ["Colour tools", "Worldwide", "5,710,000", "1,540,000", "628,000", "143,000"],
+          ["Logo files and usage", "Worldwide", "80,000", "22,000", "9,000", "2,000"]
+        ]
+      },
+      "bullets": [
+        "The product market is small. Every brand guideline query in the United States adds up to about 160,000 searches a month. Owning all of it at position 1 is about 43,000 visits a month.",
+        "Worldwide the cluster is four times larger. ShareHue serves English speakers everywhere, so the worldwide row is the right ceiling for product pages and the blog.",
+        "Colour tools are a different market, fifteen times larger and dominated by utility sites. Those visitors are developers and students, not buyers. Treat it as reach and links.",
+        "Competitor-branded queries (Frontify, Canva, Figma guidelines) are about 60,000 a month worldwide, which matches the thin Search Console data so far."
+      ]
+    },
+    {
+      "heading": "SignKaro",
+      "table": {
+        "columns": ["Cluster", "Location", "Searches per month", "Position 1", "Position 3", "Positions 6 to 10"],
+        "rows": [
+          ["Contract templates (rental, NDA, offer letter, deed, consent)", "United States", "2,740,000", "739,000", "301,000", "68,000"],
+          ["E-signature (sign a pdf, electronic signature, esign)", "United States", "1,290,000", "348,000", "142,000", "32,000"],
+          ["Total addressable", "United States", "4,030,000", "1,088,000", "443,000", "101,000"],
+          ["E-signature", "India", "2,150,000", "580,000", "237,000", "54,000"],
+          ["Contract templates", "India", "1,210,000", "327,000", "133,000", "30,000"],
+          ["Total addressable", "India", "3,360,000", "908,000", "370,000", "84,000"]
+        ]
+      },
+      "bullets": [
+        "Excluded: competitor-branded searches of about 714,000 a month in the United States and 277,000 in India. Winnable only through comparison pages, and only in part.",
+        "In the United States, templates are twice the e-signature volume. In India it is the reverse: sign pdf online and its variants dominate.",
+        "Each contract type is its own cluster with 50,000 or more searches a month in both countries. The template pages are the main lever."
+      ]
+    },
+    {
+      "heading": "What to expect from ShareHue on organic search",
+      "table": {
+        "columns": ["Horizon", "Organic visits per month", "Sign-ups per month", "New paying accounts per month", "Added MRR per month"],
+        "rows": [
+          ["Months 1 to 3 (indexing)", "under 500", "10 to 20", "0 to 1", "$0 to $50"],
+          ["Month 6, if the pages below exist", "2,000 to 5,000", "60 to 150", "2 to 5", "$100 to $250"],
+          ["Month 12, good execution", "5,000 to 15,000", "150 to 400", "5 to 12", "$250 to $600"],
+          ["Ceiling (position 1 on the whole worldwide brand cluster)", "about 170,000", "4,000 to 5,000", "120 to 150", "$5,000 to $7,000"]
+        ]
+      },
+      "paragraphs": [
+        "Assumptions: 3% of visitors on product pages sign up, 0.5% on colour tool pages, 3% of free accounts pay, and the average paying account is about $45 with the Agency plan in the mix. Churn is not included. The stock of MRR at month 12 is roughly the sum of the monthly additions minus what leaves, about $2,000 to $5,000 MRR. The ceiling row needs years and would still top out around $50,000 MRR."
+      ]
+    },
+    {
+      "heading": "How to earn from it organically",
+      "numbered": [
+        "Sell to agencies, not brands. One Agency account is $79 and it brings its clients with it. Every handover is a demo to the client's marketing team. Lead the pricing page with the agency story.",
+        "Let the product do the marketing. Each published brand site is a landing page. A small Made with ShareHue link on Free plan sites makes every free user recruit for you. This channel scales with usage, not with Google.",
+        "Own brand guidelines template and brand guidelines examples. The template query is the largest product-intent term: about 50,000 searches a month worldwide, 5,000 in the US. Build a page that starts a site from a template without a PDF, and an examples gallery of public sites.",
+        "Use the colour tools as reach, not revenue. Put one line under each result: import your brand PDF to get the whole palette. Let the links they earn lift the product pages.",
+        "Push the AI assistant channel harder than Google. 83 of the first 93 sign-ups in the playbook's own data came from ChatGPT and assistants. ShareHue ships brand.json and brand.md. Make brand data for AI tools the lead use case.",
+        "Cut the blog to one post a day. Two posts a day on a 160,000-search market is more than the market can absorb. Spend the saved effort on the template page, the examples gallery and comparison pages."
+      ]
+    },
+    {
+      "heading": "Where the real money is",
+      "paragraphs": [
+        "SignKaro's addressable organic market is about 25 times larger: four million searches a month in the United States alone, and a realistic first-page outcome near 100,000 visits a month per country. Each contract type is a 50,000-search cluster on its own. Most SEO effort should go to SignKaro's template and use-case pages. ShareHue should ride on agencies, the product badge and the AI channel."
+      ]
+    },
+    {
+      "heading": "Files",
+      "table": {
+        "columns": ["File", "Rows", "Location"],
+        "rows": [
+          ["sharehue/docs/seo/keyword-planner/sharehue-us.csv", "2,483", "United States"],
+          ["sharehue/docs/seo/keyword-planner/sharehue-in.csv", "2,390", "India"],
+          ["sharehue/docs/seo/keyword-planner/sharehue-world.csv", "2,536", "All locations"],
+          ["signkaro/docs/seo/keyword-planner/signkaro-us.csv", "6,693", "United States"],
+          ["signkaro/docs/seo/keyword-planner/signkaro-in.csv", "6,205", "India"]
+        ]
+      },
+      "note": "To refresh: open Keyword Planner, enter the 10 seeds per product, set the location, download the keyword ideas CSV, and replace the file. Exact volumes appear only once the account has run a campaign."
+    }
+  ]
+}
