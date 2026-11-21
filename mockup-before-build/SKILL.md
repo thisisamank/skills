@@ -1,9 +1,14 @@
 ---
 name: mockup-before-build
-description: Make a local HTML mockup or a checkbox approval page before building. Use before a large UI or scope decision, or when the user asks to see a design or choose features first.
+description: Make a local HTML mockup or a checkbox approval page before building. Use only when the user asks for a mockup or approval page, or before building a mobile app UI. Do not use for web work. The user checks web work with npm run dev.
 ---
 
 # Mockup before build
+
+## When to use
+- Use this skill when the user asks for a mockup or approval page.
+- Use it before you build a mobile app screen.
+- Do not use it for web. Build the web UI directly. The user runs `npm run dev`.
 
 ## Two kinds of page
 1. **Design mockup.** One static `.html` file that shows the screen with realistic data. The user reviews it and asks for changes. Iterate.
