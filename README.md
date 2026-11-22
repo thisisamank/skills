@@ -36,3 +36,4 @@ To use one, copy or symlink its folder into `~/.claude/skills/`.
 | low-level-design | how to write code: order of work, objects, APIs, concurrency, tests, pattern triggers |
 | feature-pushback | discuss a feature before building |
 | traffic-ceiling | how much organic traffic a product can reach, and what it is worth; Search Console plus Keyword Planner through the user's browser |
+| 3d-mascot-designer | design, build and animate a 3D product mascot; preview page, GLB, Blender and app integration |

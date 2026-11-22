@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mascot preview</title>
+<style>
+  :root { --bg: #f1efff; --ink: #1c1a2e; --muted: #6b6880; --card: rgba(255,255,255,.86); --line: rgba(28,26,46,.12); --accent: #6d5efc; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         -webkit-tap-highlight-color: transparent; overflow: hidden; }
+  #app { display: grid; grid-template-columns: 1fr 340px; height: 100dvh; }
+  #stage { position: relative; min-width: 0; min-height: 0; }
+  #c { width: 100%; height: 100%; display: block; touch-action: pan-y; cursor: grab; }
+  #c:active { cursor: grabbing; }
+  #hint { position: absolute; left: 0; right: 0; bottom: max(12px, env(safe-area-inset-bottom)); margin: 0; text-align: center;
+          color: var(--muted); font-size: 13px; pointer-events: none; }
+  #panel { background: var(--card); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-left: 1px solid var(--line);
+           padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -.01em; }
+  #tagline { margin: 2px 0 0; color: var(--muted); }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 20px 0 8px; font-weight: 600; }
+  button { font: inherit; color: inherit; min-height: 44px; border-radius: 12px; border: 1px solid var(--line); background: #fff;
+           padding: 0 12px; cursor: pointer; touch-action: manipulation; transition: transform .12s ease-out, background .15s, border-color .15s; }
+  button:active { transform: scale(.97); }
+  button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+  .row { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 6px; }
+  .row input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
+  .colors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .colors label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); text-align: center; }
+  .colors input { width: 100%; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; }
+  .wide { width: 100%; margin-top: 16px; }
+  #fail { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+  #qa { padding: 12px; background: #fff; }
+  #qa pre { font: 12px/1.4 ui-monospace, monospace; white-space: pre-wrap; }
+  body.qa { overflow: auto; } body.qa #app { display: none; }
+  @media (max-width: 760px) {
+    #app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
+    #panel { border-left: 0; border-top: 1px solid var(--line); max-height: 46dvh; padding-top: 14px; }
+    h1 { font-size: 19px; }
+    #anims { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: minmax(104px, 1fr); overflow-x: auto;
+             margin: 0 -18px; padding: 0 18px 4px; scrollbar-width: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { button { transition: none; } }
+</style>
+</head>
+<body>
+<main id="app">
+  <div id="stage">
+    <canvas id="c" aria-label="Interactive 3D mascot"></canvas>
+    <p id="hint">Move the pointer. Drag to turn.</p>
+  </div>
+  <aside id="panel">
+    <header><h1 id="title"></h1><p id="tagline"></p></header>
+    <section><h2>Animations</h2><div id="anims" class="grid"></div>
+      <label class="row"><input type="checkbox" id="follow" checked> Eyes follow the pointer</label></section>
+    <section><h2>Personality</h2><div id="pers" class="seg"></div></section>
+    <section><h2>Material</h2><div id="mat" class="seg"></div></section>
+    <section><h2>Colors</h2><div id="colors" class="colors"></div></section>
+    <section id="handoff" hidden><h2>Handoff</h2><div class="grid">
+      <button id="dl-glb">Download GLB</button><button id="dl-rig">Download rig JSON</button></div></section>
+    <button id="copy" class="wide">Copy settings</button>
+  </aside>
+</main>
+<div id="qa" hidden></div>
+
+<!-- THREE:BEGIN  "mascot_tools.py inline" replaces this block with an inlined copy of three.js. -->
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }
+</script>
+<script type="module">import * as THREE from 'three'; window.THREE = THREE;</script>
+<!-- THREE:END -->
+
+<script type="module">
+const THREE = window.THREE;
+
+// ======================================================================
+// MASCOT. This block is portable. "mascot_tools.py module" copies it to
+// mascot.js. It needs only THREE. It does not touch the DOM.
+// ======================================================================
+// MASCOT:BEGIN
+const MASCOT_DEFAULTS = {
+  name: 'Pip',
+  tagline: 'A friendly guide',
+  colors: { body: '#6d5efc', accent: '#ffc857', dark: '#1e1a3c' },
+  material: 'toy',            // 'toy' (glossy) | 'clay' (matte) | 'toon' (flat bands)
+  personality: 'friendly',    // a key of PERSONALITIES
+};
+
+// Personality sets the timing. tempo: clock speed. bounce: size of squash and jumps.
+// sway: size of idle motion. blend: seconds to cross-fade between states.
+const PERSONALITIES = {
+  calm:      { tempo: 0.8,  bounce: 0.65, sway: 0.7, blend: 0.40 },
+  friendly:  { tempo: 1.0,  bounce: 1.0,  sway: 1.0, blend: 0.28 },
+  energetic: { tempo: 1.25, bounce: 1.3,  sway: 1.3, blend: 0.18 },
+};
+
+function createMascot(THREE, options = {}) {
+  const cfg = Object.assign({}, MASCOT_DEFAULTS, options);
+  cfg.colors = Object.assign({}, MASCOT_DEFAULTS.colors, options.colors);
+  let P = PERSONALITIES[cfg.personality] || PERSONALITIES.friendly;
+  let reduced = false;
+
+  // ---------- 1. Materials: one per color slot, so recolor is one call ----------
+  const ramp = new THREE.DataTexture(new Uint8Array([110,110,110,255, 185,185,185,255, 255,255,255,255]), 3, 1, THREE.RGBAFormat);
+  ramp.minFilter = ramp.magFilter = THREE.NearestFilter; ramp.needsUpdate = true;
+  function makeMaterial(style, color, slot) {
+    if (slot === 'dark' && style === 'clay') style = 'toy';       // glossy eyes look alive on a matte body
+    if (style === 'toon') return new THREE.MeshToonMaterial({ color, gradientMap: ramp });
+    if (style === 'clay') return new THREE.MeshStandardMaterial({ color, roughness: 0.95 });
+    return new THREE.MeshPhysicalMaterial({ color, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.18 });
+  }
+  const SLOTS = ['body', 'accent', 'dark'];
+  const mats = { light: new THREE.MeshBasicMaterial({ color: '#ffffff' }) };
+  SLOTS.forEach(s => { mats[s] = makeMaterial(cfg.material, cfg.colors[s], s); });
+
+  // ---------- 2. Build: bones are groups that animate; parts are meshes ----------
+  const root = new THREE.Group(); root.name = 'root'; root.userData.bone = true;
+  const bones = { root }, parts = {};
+  function bone(name, parent, x, y, z) {
+    const g = new THREE.Group(); g.name = name; g.position.set(x, y, z); g.userData.bone = true;
+    parent.add(g); bones[name] = g; return g;
+  }
+  function group(name, parent, x, y, z) {
+    const g = new THREE.Group(); g.name = name; g.position.set(x || 0, y || 0, z || 0);
+    parent.add(g); parts[name] = g; return g;
+  }
+  function mesh(name, geo, slot, parent, pos, scale) {
+    const m = new THREE.Mesh(geo, mats[slot]); m.name = name; m.userData.slot = slot;
+    if (pos) m.position.set(pos[0], pos[1], pos[2]);
+    if (scale) m.scale.set(scale[0], scale[1], scale[2]);
+    m.castShadow = slot !== 'light'; geo.computeBoundingSphere();
+    parent.add(m); parts[name] = m; return m;
+  }
+  const sphere = r => new THREE.SphereGeometry(r, 32, 20);
+
+  // hips pivot sits on the ground, so squash and stretch keep the feet planted
+  const hips = bone('hips', root, 0, 0, 0);
+  const profile = [[0, .10], [.30, .10], [.47, .17], [.55, .33], [.56, .50], [.50, .70], [.38, .86], [.20, .96], [0, .99]];
+  const curve = new THREE.SplineCurve(profile.map(p => new THREE.Vector2(p[0], p[1])));
+  const lathePts = curve.getPoints(28).map(p => new THREE.Vector2(Math.max(0, p.x), p.y));
+  mesh('body', new THREE.LatheGeometry(lathePts, 40), 'body', hips);
+  mesh('footL', sphere(.2), 'accent', hips, [ .27, .09, .16], [1, .45, 1.4]);
+  mesh('footR', sphere(.2), 'accent', hips, [-.27, .09, .16], [1, .45, 1.4]);
+
+  // head: big, pivot at the neck
+  const HEAD_R = [.77, .658, .70], HEAD_Y = .52;
+  const head = bone('head', hips, 0, .92, 0);
+  mesh('head', sphere(.70), 'body', head, [0, HEAD_Y, 0], [HEAD_R[0] / .7, HEAD_R[1] / .7, HEAD_R[2] / .7]);
+  // distance from the head centre to its surface in a direction (yaw, pitch); puts face parts on the surface
+  function surface(yaw, pitch) {
+    const x = Math.sin(yaw) * Math.cos(pitch), y = -Math.sin(pitch), z = Math.cos(yaw) * Math.cos(pitch);
+    return 1 / Math.hypot(x / HEAD_R[0], y / HEAD_R[1], z / HEAD_R[2]);
+  }
+  const face = group('face', head, 0, HEAD_Y, 0);
+  const EYE_YAW = .34, EYE_PITCH = .03;
+  function eye(side, sign) {
+    const pivot = group('eyePivot' + side, face); pivot.rotation.order = 'YXZ';
+    const e = group('eye' + side, pivot, 0, 0, surface(EYE_YAW, EYE_PITCH) - .005);
+    mesh('eyeball' + side, sphere(.13), 'dark', e, null, [1, 1.2, .4]);
+    mesh('eyeShine' + side, new THREE.SphereGeometry(.04, 12, 8), 'light', e, [.04, .065, .04], [1, 1, .5]);
+    pivot.userData.sign = sign;
+  }
+  eye('L', 1); eye('R', -1);
+  function cheek(side, sign) {
+    const pivot = group('cheekPivot' + side, face); pivot.rotation.order = 'YXZ'; pivot.rotation.set(.2, sign * .62, 0);
+    mesh('cheek' + side, sphere(.075), 'accent', pivot, [0, 0, surface(.62, .2) - .01], [1, .7, .3]);
+  }
+  cheek('L', 1); cheek('R', -1);
+  // mouth: a tube that morphs from a flat line to a smile; a negative weight gives a frown
+  const mouthPivot = group('mouthPivot', face); mouthPivot.rotation.x = .33;
+  const mouthAt = group('mouthAt', mouthPivot, 0, 0, surface(0, .33) + .004);
+  const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  const flat = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(v3(-.1, 0, 0), v3(0, 0, 0), v3(.1, 0, 0)), 16, .02, 8);
+  const smileGeo = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(v3(-.1, .04, -.008), v3(0, -.085, .004), v3(.1, .04, -.008)), 16, .02, 8);
+  const delta = smileGeo.attributes.position.array.slice();
+  for (let i = 0; i < delta.length; i++) delta[i] -= flat.attributes.position.array[i];
+  flat.morphAttributes.position = [new THREE.BufferAttribute(delta, 3)]; flat.morphTargetsRelative = true;
+  const mouth = mesh('mouth', flat, 'dark', mouthAt); mouth.morphTargetDictionary = { smile: 0 }; mouth.morphTargetInfluences = [0];
+  mesh('mouthHole', sphere(1), 'dark', mouthAt, [0, -.012, 0], [.001, .001, .001]);
+
+  // arms: pivot at the shoulder, hand at the end
+  const ARM_REST = .42;
+  function arm(side, sign) {
+    const a = bone('arm' + side, hips, sign * .47, .70, 0);
+    mesh('upperArm' + side, new THREE.CapsuleGeometry(.095, .26, 6, 14), 'body', a, [0, -.2, 0]);
+    mesh('hand' + side, sphere(.125), 'body', a, [0, -.42, 0]);
+  }
+  arm('L', 1); arm('R', -1);       // L is the mascot's left: +x, the viewer's right
+
+  // antenna: driven by a spring, never by keyframes (follow-through)
+  const antenna = bone('antenna', head, 0, HEAD_Y + HEAD_R[1] - .02, 0);
+  mesh('antennaStalk', new THREE.CapsuleGeometry(.022, .2, 4, 8), 'dark', antenna, [0, .11, 0]);
+  mesh('antennaBall', sphere(.085), 'accent', antenna, [0, .27, 0]);
+
+  // pairs that must not pass through each other; selfTest() measures them
+  const NO_CLIP = [['handL', 'head'], ['handR', 'head'], ['handL', 'handR'], ['antennaBall', 'head']];
+
+  // ---------- 3. Pose: every animation writes these channels ----------
+  const REST = { y: 0, yaw: 0, squash: 0, lean: 0, pitch: 0,
+                 headYaw: 0, headPitch: 0, headRoll: 0,
+                 armLRaise: 0, armLFwd: 0, armRRaise: 0, armRFwd: 0,
+                 blink: 0, eyeWide: 0, lookX: 0, lookY: 0, mouthOpen: 0, smile: .6 };
+  const CH = Object.keys(REST);
+  const FACE = ['blink', 'eyeWide', 'lookX', 'lookY', 'mouthOpen', 'smile'];   // become shape keys in Blender
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+
+  function applyPose(p) {
+    root.position.y = p.y; root.rotation.y = p.yaw;
+    const sy = 1 + p.squash, sxz = 1 / Math.sqrt(sy);              // squash and stretch keep the volume
+    hips.scale.set(sxz, sy, sxz); hips.rotation.set(p.pitch, 0, p.lean);
+    head.rotation.set(p.headPitch, p.headYaw, p.headRoll);
+    bones.armL.rotation.set(-p.armLFwd, 0,  ARM_REST + p.armLRaise);
+    bones.armR.rotation.set(-p.armRFwd, 0, -ARM_REST - p.armRRaise);
+    const blink = clamp(p.blink, 0, 1);
+    for (const side of ['L', 'R']) {
+      const pivot = parts['eyePivot' + side];
+      pivot.rotation.set(EYE_PITCH - p.lookY * .16, pivot.userData.sign * EYE_YAW + p.lookX * .2, 0);
+      parts['eye' + side].scale.set(1 + .12 * p.eyeWide + .12 * blink, (1 - .93 * blink) * (1 + .25 * p.eyeWide), 1);
+    }
+    const open = clamp(p.mouthOpen, 0, 1);
+    mouth.morphTargetInfluences[0] = p.smile * (1 - open) * (1 - open); mouth.scale.x = 1 - .9 * open;   // the line shrinks into the open mouth
+    parts.mouthHole.scale.set(.075 * (.75 + .3 * open), Math.max(.001, .09 * open), .03);
+  }
+
+  // ---------- 4. Animation tools ----------
+  const E = {
+    linear: x => x,
+    in: x => x * x * x,
+    out: x => 1 - Math.pow(1 - x, 3),
+    inOut: x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2,
+    back: x => 1 + 2.70158 * Math.pow(x - 1, 3) + 1.70158 * Math.pow(x - 1, 2),     // goes past the target, then settles
+  };
+  // keys: [time, value, ease]. The ease belongs to the move that ENDS at that key.
+  function track(t, keys) {
+    if (t <= keys[0][0]) return keys[0][1];
+    for (let i = 1; i < keys.length; i++) {
+      if (t <= keys[i][0]) {
+        const a = keys[i - 1], b = keys[i];
+        return a[1] + (b[1] - a[1]) * E[b[2] || 'inOut']((t - a[0]) / (b[0] - a[0]));
+      }
+    }
+    return keys[keys.length - 1][1];
+  }
+  const TAU = Math.PI * 2;
+  const wave = (t, period, phase) => Math.sin(TAU * t / period + (phase || 0));
+
+  // Idle is the base layer. Other clips add a part of it (idleMix), so the mascot never freezes.
+  const IDLE_PERIOD = 4;
+  function idlePose(t, p) {
+    p.squash += .022 * wave(t, 2);                 // breathing
+    p.lean += .025 * wave(t, 4);                   // weight shift
+    p.headRoll += .035 * wave(t, 4, -.7);          // the head lags the body: overlap
+    p.headPitch += .02 * wave(t, 2, -.5);
+    p.armLRaise += .05 * wave(t, 2, -.9);          // arms follow the breath, a little late
+    p.armRRaise += .05 * wave(t, 2, -1.2);
+  }
+
+  // Clips. pose(t, p, o): t in seconds, p starts at REST, o holds options.
+  // loop clips must repeat exactly after "duration". One-shot clips must end at REST.
+  // look: how much the eyes follow the pointer during the clip (0 to 1).
+  const CLIPS = {
+    idle: { label: 'Idle', duration: IDLE_PERIOD, loop: true, idleMix: 1, look: 1, pose() {} },
+
+    wave: { label: 'Wave', duration: 1.9, look: .5, pose(t, p) {
+      const on = track(t, [[.42, 0], [.56, 1, 'out'], [1.3, 1], [1.5, 0, 'in']]);
+      p.squash = track(t, [[0, 0], [.14, -.06, 'out'], [.36, .05, 'out'], [.62, 0]]);            // dip (anticipation), then pop
+      p.armLRaise = track(t, [[0, 0], [.14, -.12, 'out'], [.44, 1.72, 'back'], [1.45, 1.72], [1.9, 0]]) + on * .22 * wave(t - .42, .34);
+      p.armLFwd = track(t, [[0, 0], [.44, .45, 'out'], [1.45, .45], [1.9, 0]]);
+      p.lean = track(t, [[0, 0], [.14, .03, 'out'], [.46, -.05, 'out'], [1.45, -.05], [1.9, 0]]);
+      p.headRoll = track(t, [[.06, 0], [.52, .09, 'out'], [1.5, .09], [1.9, 0]]);                // the head tilts away from the hand, a little later
+      p.mouthOpen = track(t, [[.2, 0], [.48, .55, 'out'], [1.4, .45], [1.8, 0]]);
+      p.eyeWide = track(t, [[.2, 0], [.45, .3, 'out'], [1.4, .2], [1.8, 0]]);
+      p.smile = track(t, [[0, .6], [.4, 1, 'out'], [1.5, 1], [1.9, .6]]);
+    } },
+
+    celebrate: { label: 'Celebrate', duration: 1.75, look: .2, idleMix: .2, pose(t, p, o) {
+      // crouch (anticipation) -> stretch on launch -> round at the top -> stretch -> squash on landing -> settle
+      p.squash = track(t, [[0, 0], [.22, -.2, 'out'], [.34, .22, 'out'], [.62, .04, 'out'], [.9, .13, 'in'], [.99, -.24, 'out'], [1.2, .07, 'out'], [1.5, 0]]);
+      const u = clamp((t - .3) / .62, 0, 1); p.y = (reduced ? .25 : .7) * 4 * u * (1 - u);
+      if (o.spin !== false && !reduced) p.yaw = track(t, [[.3, 0], [.95, TAU, 'inOut']]);
+      const arms = track(t, [[0, 0], [.22, -.2, 'out'], [.46, 1.75, 'back'], [.95, 1.6], [1.14, 1.8, 'out'], [1.75, 0]]);
+      p.armLRaise = arms; p.armRRaise = arms;
+      p.armLFwd = p.armRFwd = track(t, [[.22, 0], [.46, .25, 'out'], [1.2, .25], [1.75, 0]]);
+      p.headPitch = track(t, [[0, 0], [.22, .14, 'out'], [.46, -.2, 'out'], [.99, .1, 'inOut'], [1.4, 0]]);
+      p.mouthOpen = track(t, [[.22, 0], [.4, .9, 'out'], [1.2, .7], [1.6, 0]]);
+      p.eyeWide = track(t, [[.2, 0], [.4, .5, 'out'], [1.2, .3], [1.6, 0]]);
+      p.smile = track(t, [[0, .6], [.3, 1, 'out'], [1.5, 1], [1.75, .6]]);
+    } },
+
+    thinking: { label: 'Thinking', duration: 3, loop: true, look: 0, idleMix: .6, pose(t, p) {
+      p.headRoll = .15 + .03 * wave(t, 3); p.headYaw = -.2; p.headPitch = -.08;
+      p.lookX = -.65 + .25 * wave(t, 1.5); p.lookY = .7;                    // the eyes search up and to the side
+      p.armRFwd = 1.8 + .08 * wave(t, .75); p.armRRaise = -.62;            // a hand comes up to the chin and taps
+      p.lean = .04; p.smile = .1; p.squash = .012 * wave(t, 1.5);
+    } },
+
+    sad: { label: 'Sad', duration: 2.9, look: 0, idleMix: .3, pose(t, p) {
+      const d = track(t, [[0, 0], [.2, -.15, 'out'], [.8, 1, 'inOut'], [2.2, 1], [2.9, 0]]);   // a small rise first, then the sink
+      const s = Math.max(0, d);
+      p.squash = -.09 * d; p.headPitch = .26 * d; p.lookY = -.6 * s; p.blink = .3 * s;
+      p.armLRaise = p.armRRaise = -.2 * s;
+      p.headYaw = .11 * wave(t - .9, .9) * track(t, [[.9, 0], [1.1, 1], [1.8, 1], [2.25, 0]]);   // a slow shake of the head
+      p.smile = .6 - 1.4 * s;
+    } },
+
+    point: { label: 'Point', duration: 1.8, look: .2, pose(t, p) {
+      // points to the mascot's left (the viewer's right). Use { mirror: true } for the other side.
+      const reach = track(t, [[0, 0], [.16, -.16, 'out'], [.42, 1, 'back'], [1.3, 1], [1.8, 0]]);
+      p.armLRaise = 1.2 * reach; p.armRRaise = .1 * Math.max(0, reach);
+      p.lean = -.08 * reach;
+      p.squash = track(t, [[0, 0], [.16, -.05, 'out'], [.42, .04, 'out'], [.7, 0]]);
+      p.lookX = track(t, [[0, 0], [.26, 1, 'out'], [.8, 1], [1.02, 0], [1.8, 0]]);              // the eyes lead, then return to the user
+      p.headYaw = track(t, [[.06, 0], [.42, .32, 'out'], [.86, .32], [1.12, .1], [1.3, .1], [1.8, 0]]);
+      p.mouthOpen = track(t, [[.3, 0], [.5, .35, 'out'], [1.2, .3], [1.6, 0]]);
+      p.smile = track(t, [[0, .6], [.4, .95, 'out'], [1.4, .95], [1.8, .6]]);
+    } },
+
+    talk: { label: 'Talk', duration: 1.6, loop: true, look: 1, idleMix: 1, pose(t, p) {
+      p.mouthOpen = .1 + .6 * Math.pow(wave(t, .8), 2) * (.65 + .35 * wave(t, 1.6, 1));   // smooth at the loop seam
+      p.headPitch = .04 * wave(t, .8); p.headRoll = .03 * wave(t, 1.6);
+      p.armLRaise = .2 + .1 * wave(t, .8, .5); p.armLFwd = .3 + .08 * wave(t, 1.6);
+      p.squash = .012 * wave(t, .4); p.smile = .75;
+    } },
+  };
+
+  function mirror(p) {
+    let s;
+    s = p.armLRaise; p.armLRaise = p.armRRaise; p.armRRaise = s;
+    s = p.armLFwd; p.armLFwd = p.armRFwd; p.armRFwd = s;
+    p.lean = -p.lean; p.yaw = -p.yaw; p.headYaw = -p.headYaw; p.headRoll = -p.headRoll; p.lookX = -p.lookX;
+  }
+  // raw: the clip alone. No idle layer, no personality, no time wrap. Tests use it.
+  function rawPose(name, t, o) { const p = Object.assign({}, REST); CLIPS[name].pose(t, p, o || {}); return p; }
+  function evalClip(name, t, idleTime, o) {
+    o = o || {};
+    const c = CLIPS[name];
+    const p = rawPose(name, c.loop ? t % c.duration : Math.min(t, c.duration), o);
+    if (o.mirror) mirror(p);
+    p.squash *= P.bounce; p.y *= P.bounce;
+    const mix = (o.bake && name !== 'idle') ? 0 : (c.idleMix == null ? .5 : c.idleMix) * P.sway;
+    if (mix) { const i = Object.assign({}, REST); idlePose(idleTime, i); for (const ch of CH) p[ch] += (i[ch] - REST[ch]) * mix; }
+    return p;
+  }
+
+  // ---------- 5. State machine: cross-fade from the pose on screen to the new clip ----------
+  const out = Object.assign({}, REST), from = Object.assign({}, REST);
+  let state = { name: 'idle', t: 0, o: {} }, blendT = 1, blendDur = P.blend, idleTime = 0;
+  const listeners = {};
+  const emit = (ev, a) => (listeners[ev] || []).forEach(f => f(a));
+
+  function play(name, o) {
+    if (!CLIPS[name]) { console.warn('mascot: no clip named ' + name); return; }
+    Object.assign(from, out);
+    from.yaw = Math.atan2(Math.sin(from.yaw), Math.cos(from.yaw));    // a full turn is the same as no turn
+    // a one-shot from idle starts at REST, so use a short fade and keep its anticipation
+    blendDur = (state.name === 'idle' && !CLIPS[name].loop) ? Math.min(.12, P.blend) : P.blend;
+    state = { name, t: 0, o: o || {} }; blendT = 0;
+    emit('state', name);
+  }
+
+  // ---------- 6. Layers on top: blink, pointer follow, spring ----------
+  const blinkCurve = t => track(t, [[0, 0], [.07, 1, 'in'], [.1, 1], [.25, 0, 'out']]);
+  let blinkT = 9, nextBlink = 1.5;
+  const look = { tx: 0, ty: 0, ex: 0, ey: 0, hx: 0, hy: 0, w: 1, on: true };
+  const spring = { ax: 0, az: 0, vx: 0, vz: 0, prev: new THREE.Vector3(), ready: false };
+  const tmp = new THREE.Vector3();
+  function stepSpring(dt) {
+    antenna.getWorldPosition(tmp);
+    if (!spring.ready) { spring.prev.copy(tmp); spring.ready = true; }
+    const vx = (tmp.x - spring.prev.x) / dt, vz = (tmp.z - spring.prev.z) / dt; spring.prev.copy(tmp);
+    const k = 110, c = 6.5, drag = .13;          // stiffness, damping, how far the tip trails per unit of speed
+    spring.vz += (k * (clamp(vx * drag, -.7, .7) - spring.az) - c * spring.vz) * dt; spring.az += spring.vz * dt;
+    spring.vx += (k * (clamp(-vz * drag, -.7, .7) - spring.ax) - c * spring.vx) * dt; spring.ax += spring.vx * dt;
+    antenna.rotation.set(spring.ax, 0, spring.az);
+  }
+  function resetSpring() { spring.ax = spring.az = spring.vx = spring.vz = 0; spring.ready = false; antenna.rotation.set(0, 0, 0); }
+
+  function update(dt) {
+    if (!(dt > 0)) return;                       // two frames can share one timestamp; a zero step would break the spring
+    dt = Math.min(dt, .05);                      // a slow frame must not make the pose jump
+    idleTime += dt * P.tempo; state.t += dt * P.tempo;
+    const c = CLIPS[state.name];
+    if (!c.loop && state.t >= c.duration) { const done = state.name; play(state.o.then || 'idle'); emit('end', done); }
+    const target = evalClip(state.name, state.t, idleTime, state.o);
+    blendT += dt;
+    const w = E.inOut(Math.min(1, blendT / blendDur));
+    for (const ch of CH) out[ch] = from[ch] + (target[ch] - from[ch]) * w;
+
+    const p = Object.assign({}, out), clip = CLIPS[state.name];
+    // blink: quick close, slower open, at random times
+    blinkT += dt; nextBlink -= dt;
+    if (nextBlink <= 0) { blinkT = 0; nextBlink = Math.random() < .18 ? .32 : 2.2 + Math.random() * 3.5; }
+    p.blink = Math.max(p.blink, blinkCurve(blinkT));
+    // pointer follow: the eyes move first, the head follows more slowly
+    const lw = look.on ? (clip.look == null ? .6 : clip.look) : 0;
+    look.w += (lw - look.w) * (1 - Math.exp(-dt * 8));
+    look.ex += (look.tx - look.ex) * (1 - Math.exp(-dt * 16)); look.ey += (look.ty - look.ey) * (1 - Math.exp(-dt * 16));
+    look.hx += (look.tx - look.hx) * (1 - Math.exp(-dt * 5));  look.hy += (look.ty - look.hy) * (1 - Math.exp(-dt * 5));
+    p.lookX = clamp(p.lookX + look.ex * look.w, -1, 1); p.lookY = clamp(p.lookY + look.ey * look.w, -1, 1);
+    p.headYaw += look.hx * .3 * look.w; p.headPitch -= look.hy * .2 * look.w;
+    applyPose(p);
+    stepSpring(dt);
+  }
+
+  // ---------- 7. Checks and export helpers ----------
+  const m4 = new THREE.Matrix4(), ca = new THREE.Vector3();
+  function penetration(a, b) {                   // depth in world units; above 0 the two parts overlap
+    const A = a.geometry.boundingSphere, B = b.geometry.boundingSphere;
+    ca.copy(A.center).applyMatrix4(a.matrixWorld).applyMatrix4(m4.copy(b.matrixWorld).invert()).sub(B.center);
+    const sa = Math.cbrt(Math.abs(a.matrixWorld.determinant())), sb = Math.cbrt(Math.abs(b.matrixWorld.determinant()));
+    return (B.radius + A.radius * sa / sb - ca.length()) * sb;
+  }
+  function selfTest() {
+    const issues = [], clips = {};
+    const turnFree = (ch, d) => ch === 'yaw' ? Math.abs(Math.atan2(Math.sin(d), Math.cos(d))) : Math.abs(d);   // a full turn is no change
+    const diff = (a, b) => { let m = 0, at = ''; for (const ch of CH) { const d = turnFree(ch, a[ch] - b[ch]); if (d > m) { m = d; at = ch; } } return [m, at]; };
+    for (const name in CLIPS) {
+      const c = CLIPS[name], D = c.duration, e = 1e-4; let deep = 0, where = '';
+      for (let i = 0; i <= 80; i++) {
+        const t = D * i / 80, p = evalClip(name, t, t, { bake: true });
+        for (const ch of CH) if (!Number.isFinite(p[ch])) issues.push(name + ': channel ' + ch + ' is not a number at ' + t.toFixed(2) + ' s');
+        if (p.y < -1e-4) issues.push(name + ': goes below the ground at ' + t.toFixed(2) + ' s');
+        applyPose(p); root.updateMatrixWorld(true);
+        for (const pair of NO_CLIP) { const d = penetration(parts[pair[0]], parts[pair[1]]); if (d > deep) { deep = d; where = pair.join(' / ') + ' at ' + t.toFixed(2) + ' s'; } }
+      }
+      if (deep > .02) issues.push(name + ': parts clip, ' + where + ', depth ' + deep.toFixed(3));
+      if (c.loop) {
+        const jump = diff(rawPose(name, 0), rawPose(name, D));
+        const v0 = rawPose(name, e), v1 = rawPose(name, D), vA = rawPose(name, 0), vB = rawPose(name, D - e);
+        let hitch = 0, hat = ''; for (const ch of CH) { const d = Math.abs((v0[ch] - vA[ch]) - (v1[ch] - vB[ch])) / e; if (d > hitch) { hitch = d; hat = ch; } }
+        if (jump[0] > .002) issues.push(name + ': loop jumps, channel ' + jump[1] + ' by ' + jump[0].toFixed(3));
+        else if (hitch > .05) issues.push(name + ': loop has a hitch, channel ' + hat + ' changes speed at the seam');
+      } else {
+        const end = diff(rawPose(name, D), REST);
+        if (end[0] > .01) issues.push(name + ': does not end at REST, channel ' + end[1] + ' is off by ' + end[0].toFixed(3));
+        const start = diff(rawPose(name, 0), REST);
+        if (start[0] > .01) issues.push(name + ': does not start at REST, channel ' + start[1] + ' is off by ' + start[0].toFixed(3));
+      }
+      clips[name] = { duration: D, loop: !!c.loop, deepestOverlap: +deep.toFixed(3) };
+    }
+    resetSpring();
+    return { ok: issues.length === 0, issues, clips };
+  }
+  // Show one frame of one clip. No layers. Used for contact sheets.
+  function poseAt(name, t) { resetSpring(); applyPose(evalClip(name, t, t, { bake: true })); root.updateMatrixWorld(true); }
+  // Play a clip at a fixed frame rate and call visit(i, t, pose) for each frame. Used by the exporters.
+  function sample(name, fps, visit) {
+    const c = CLIPS[name], n = Math.round(c.duration * fps), dt = 1 / fps;
+    resetSpring();
+    const at = t => {
+      const p = evalClip(name, t, t, { bake: true });
+      if (name === 'idle') p.blink = Math.max(p.blink, blinkCurve(t - 2.6));     // one blink in the exported idle
+      applyPose(p); root.updateMatrixWorld(true); stepSpring(dt); root.updateMatrixWorld(true); return p;
+    };
+    if (c.loop) for (let k = 0; k < 2; k++) for (let i = 0; i < n; i++) at(i * dt);   // run in, so the spring is in its cycle
+    for (let i = 0; i <= n; i++) visit(i, i * dt, at(c.loop ? (i % n) * dt : i * dt));
+    return n + 1;
+  }
+
+  applyPose(REST);
+  return {
+    root, bones, parts, clips: CLIPS, REST, FACE, config: cfg,
+    update, play, applyPose, poseAt, sample, selfTest,
+    get state() { return state.name; },
+    stop() { play('idle'); },
+    on(ev, f) { (listeners[ev] = listeners[ev] || []).push(f); return () => { listeners[ev] = listeners[ev].filter(g => g !== f); }; },
+    // x and y from -1 to 1, relative to the mascot's head. (0, 0) looks at the viewer.
+    lookAt(x, y) { look.tx = clamp(x, -1, 1); look.ty = clamp(y, -1, 1); },
+    setFollow(on) { look.on = !!on; },
+    setColors(c) { for (const s of SLOTS) if (c[s]) { cfg.colors[s] = c[s]; mats[s].color.set(c[s]); } },
+    setMaterial(style) {
+      cfg.material = style;
+      for (const s of SLOTS) { const old = mats[s]; mats[s] = makeMaterial(style, cfg.colors[s], s); old.dispose(); }
+      root.traverse(o => { if (o.isMesh && mats[o.userData.slot]) o.material = mats[o.userData.slot]; });
+    },
+    setPersonality(name) { if (PERSONALITIES[name]) { cfg.personality = name; P = PERSONALITIES[name]; } },
+    setReducedMotion(on) { reduced = !!on; },
+    settings() { return { colors: Object.assign({}, cfg.colors), material: cfg.material, personality: cfg.personality }; },
+  };
+}
+// MASCOT:END
+
+// ======================================================================
+// STAGE: renderer, camera, soft light, ground shadow
+// ======================================================================
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const stageEl = $('stage'), canvas = $('c');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); }
+catch (err) { stageEl.innerHTML = '<p id="fail">This device cannot show 3D graphics.</p>'; throw err; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.VSMShadowMap;     // VSM gives a blurred, soft edge
+renderer.toneMapping = THREE.NeutralToneMapping;          // keeps brand colors close to their hex values
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, 1, .1, 60);
+
+// a small studio to reflect: gradient dome plus two soft boxes. No image file is needed.
+function studioEnvironment() {
+  const s = new THREE.Scene();
+  const dome = new THREE.SphereGeometry(12, 32, 16), col = [], pos = dome.attributes.position;
+  for (let i = 0; i < pos.count; i++) { const k = .35 + .65 * (pos.getY(i) / 24 + .5); col.push(k, k, k * 1.03); }
+  dome.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  s.add(new THREE.Mesh(dome, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  const box = (x, y, z, w, h, power) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(power, power, power), side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 1, 0); s.add(m); };
+  box(-5, 7, 6, 6, 6, 5); box(7, 4, 2, 3, 6, 2.5); box(0, 5, -8, 8, 3, 2);
+  const pmrem = new THREE.PMREMGenerator(renderer); const tex = pmrem.fromScene(s, .03).texture; pmrem.dispose(); return tex;
+}
+try { scene.environment = studioEnvironment(); scene.environmentIntensity = .55; } catch (err) { console.warn('no environment map', err); }
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d4ee, 1.0));
+const key = new THREE.DirectionalLight(0xffffff, 2.0); key.position.set(-3, 6.5, 5); key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024); key.shadow.radius = 9; key.shadow.blurSamples = 16; key.shadow.bias = -.0004;
+Object.assign(key.shadow.camera, { left: -3, right: 3, top: 4, bottom: -2, near: 1, far: 20 });
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xffffff, .9); rim.position.set(4, 3, -5); scene.add(rim);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: .2 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+// the address can override the look, so one link shares one variant: ?material=clay&personality=calm&body=ff7a59
+const fromAddress = { colors: {} };
+for (const k of ['material', 'personality']) if (params.get(k)) fromAddress[k] = params.get(k);
+for (const k of ['body', 'accent', 'dark']) if (/^[0-9a-f]{6}$/i.test(params.get(k) || '')) fromAddress.colors[k] = '#' + params.get(k);
+const mascot = createMascot(THREE, fromAddress);
+const turntable = new THREE.Group(); turntable.add(mascot.root); scene.add(turntable);
+window.mascot = mascot;
+
+function frameCamera(aspect) {
+  const h = 3.4, w = 3.0, t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  camera.aspect = aspect; camera.position.set(0, 1.4, Math.max(h / 2 / t, w / 2 / (t * aspect))); camera.lookAt(0, 1.3, 0);
+  camera.updateProjectionMatrix();
+}
+function resize() {
+  const r = stageEl.getBoundingClientRect(); if (!r.width || !r.height) return;
+  renderer.setSize(r.width, r.height, false); frameCamera(r.width / r.height);
+}
+new ResizeObserver(resize).observe(stageEl); resize();
+
+// pointer: the eyes follow it; a drag turns the mascot
+const headPos = new THREE.Vector3(); let drag = null, turn = 0, restTimer = 0;
+function follow(e) {
+  const r = canvas.getBoundingClientRect();
+  mascot.bones.head.getWorldPosition(headPos); headPos.y += .5; headPos.project(camera);
+  const hx = r.left + (headPos.x * .5 + .5) * r.width, hy = r.top + (-headPos.y * .5 + .5) * r.height;
+  mascot.lookAt((e.clientX - hx) / (r.height * .45), -(e.clientY - hy) / (r.height * .45));
+  clearTimeout(restTimer); if (e.pointerType !== 'mouse') restTimer = setTimeout(() => mascot.lookAt(0, 0), 1800);
+}
+window.addEventListener('pointermove', e => { follow(e); if (drag) { turn = drag.turn + (e.clientX - drag.x) * .01; } });
+window.addEventListener('pointerdown', follow);
+canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, turn }; });
+window.addEventListener('pointerup', () => { drag = null; });
+window.addEventListener('pointercancel', () => { drag = null; });
+document.addEventListener('pointerleave', () => mascot.lookAt(0, 0));
+canvas.addEventListener('dblclick', () => { turn = 0; });
+
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+const applyReduce = () => mascot.setReducedMotion(reduce.matches); applyReduce(); reduce.addEventListener('change', applyReduce);
+
+let last = performance.now();
+function frame(now) {
+  const dt = (now - last) / 1000; last = now;
+  mascot.update(dt);
+  turntable.rotation.y += (turn - turntable.rotation.y) * (1 - Math.exp(-dt * 12));
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+// ======================================================================
+// PANEL: animation buttons, personality, material, colors
+// ======================================================================
+const el = (tag, props, text) => { const n = document.createElement(tag); Object.assign(n, props || {}); if (text) n.textContent = text; return n; };
+$('title').textContent = mascot.config.name; $('tagline').textContent = mascot.config.tagline;
+document.title = mascot.config.name + ' - mascot preview';
+
+const animButtons = {};
+for (const name in mascot.clips) {
+  if (name === 'idle') continue;
+  const c = mascot.clips[name], b = el('button', { type: 'button' }, c.label || name);
+  b.setAttribute('aria-pressed', 'false');
+  b.addEventListener('click', () => mascot.play(c.loop && mascot.state === name ? 'idle' : name));   // a loop button is a toggle
+  animButtons[name] = b; $('anims').append(b);
+}
+mascot.on('state', name => { for (const n in animButtons) animButtons[n].setAttribute('aria-pressed', String(n === name)); });
+$('follow').addEventListener('change', e => mascot.setFollow(e.target.checked));
+
+function segmented(host, values, current, pick) {
+  const set = v => { for (const b of host.children) b.setAttribute('aria-pressed', String(b.dataset.v === v)); };
+  for (const v of values) {
+    const b = el('button', { type: 'button' }, v[0].toUpperCase() + v.slice(1)); b.dataset.v = v;
+    b.addEventListener('click', () => { pick(v); set(v); }); host.append(b);
+  }
+  set(current);
+}
+segmented($('pers'), Object.keys(PERSONALITIES), mascot.config.personality, v => mascot.setPersonality(v));
+segmented($('mat'), ['toy', 'clay', 'toon'], mascot.config.material, v => mascot.setMaterial(v));
+
+let bg = /^[0-9a-f]{6}$/i.test(params.get('bg') || '') ? '#' + params.get('bg') : getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+const setBg = v => { bg = v; document.documentElement.style.setProperty('--bg', v); };
+const setAccent = v => document.documentElement.style.setProperty('--accent', v);
+setBg(bg); setAccent(mascot.config.colors.body);
+const colorRows = [['body', 'Body'], ['accent', 'Accent'], ['dark', 'Details'], ['bg', 'Backdrop']];
+for (const row of colorRows) {
+  const input = el('input', { type: 'color', value: row[0] === 'bg' ? bg : mascot.config.colors[row[0]] });
+  input.addEventListener('input', () => {
+    if (row[0] === 'bg') setBg(input.value);
+    else { mascot.setColors({ [row[0]]: input.value }); if (row[0] === 'body') setAccent(input.value); }
+  });
+  const label = el('label'); label.append(input, el('span', null, row[1])); $('colors').append(label);
+}
+$('copy').addEventListener('click', async () => {
+  const text = JSON.stringify(Object.assign(mascot.settings(), { backdrop: bg }), null, 2);
+  try { await navigator.clipboard.writeText(text); $('copy').textContent = 'Copied'; }
+  catch (err) { window.prompt('Copy the settings:', text); }
+  setTimeout(() => { $('copy').textContent = 'Copy settings'; }, 1500);
+});
+
+// ======================================================================
+// HANDOFF: add ?handoff to the address. GLB needs the build that loads
+// three.js from the CDN (the page before "inline").
+// ======================================================================
+const FPS = 24;
+function save(name, blob) { const a = el('a', { href: URL.createObjectURL(blob), download: name }); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+
+// Bake every clip to keyframes on the scene nodes.
+function bakeClips() {
+  const nodes = []; mascot.root.traverse(o => nodes.push(o));
+  const clips = [];
+  for (const name in mascot.clips) {
+    const times = [], rec = nodes.map(() => ({ p: [], q: [], s: [], m: [] }));
+    mascot.sample(name, FPS, (i, t) => {
+      times.push(t);
+      nodes.forEach((o, k) => {
+        rec[k].p.push(o.position.x, o.position.y, o.position.z);
+        rec[k].q.push(o.quaternion.x, o.quaternion.y, o.quaternion.z, o.quaternion.w);
+        rec[k].s.push(o.scale.x, o.scale.y, o.scale.z);
+        if (o.morphTargetInfluences) rec[k].m.push.apply(rec[k].m, o.morphTargetInfluences);
+      });
+    });
+    const moves = (a, size) => { for (let i = size; i < a.length; i++) if (Math.abs(a[i] - a[i % size]) > 1e-5) return true; return false; };
+    const tracks = [];
+    nodes.forEach((o, k) => {
+      if (moves(rec[k].p, 3)) tracks.push(new THREE.VectorKeyframeTrack(o.name + '.position', times, rec[k].p));
+      if (moves(rec[k].q, 4)) tracks.push(new THREE.QuaternionKeyframeTrack(o.name + '.quaternion', times, rec[k].q));
+      if (moves(rec[k].s, 3)) tracks.push(new THREE.VectorKeyframeTrack(o.name + '.scale', times, rec[k].s));
+      if (rec[k].m.length && moves(rec[k].m, o.morphTargetInfluences.length)) tracks.push(new THREE.NumberKeyframeTrack(o.name + '.morphTargetInfluences', times, rec[k].m));
+    });
+    clips.push(new THREE.AnimationClip(name, -1, tracks));
+  }
+  return clips;
+}
+async function exportGLB() {
+  const mod = await import('three/addons/exporters/GLTFExporter.js');
+  const style = mascot.config.material;
+  if (style === 'toon') mascot.setMaterial('clay');        // glTF has no toon material
+  const clips = bakeClips(); mascot.applyPose(mascot.REST); mascot.root.updateMatrixWorld(true);
+  const buffer = await new mod.GLTFExporter().parseAsync(mascot.root, { binary: true, animations: clips });
+  if (style === 'toon') mascot.setMaterial(style);
+  return buffer;
+}
+
+// Rig data for Blender: bones, one skinned mesh per part, shape keys for the face, and keyframes.
+function exportRig() {
+  const round = a => Array.from(a, v => Math.round(v * 1e5) / 1e5);
+  const meshes = []; mascot.root.traverse(o => { if (o.isMesh) meshes.push(o); });
+  const v = new THREE.Vector3();
+  // three.js repeats vertices along seams. Weld them, or Blender shows a crease there.
+  const welds = meshes.map(o => {
+    const pos = o.geometry.attributes.position, seen = new Map(), keep = [], map = [];
+    for (let i = 0; i < pos.count; i++) {
+      const k = Math.round(pos.getX(i) * 1e4) + ',' + Math.round(pos.getY(i) * 1e4) + ',' + Math.round(pos.getZ(i) * 1e4);
+      if (!seen.has(k)) { seen.set(k, keep.length); keep.push(i); }
+      map.push(seen.get(k));
+    }
+    const src = o.geometry.index ? o.geometry.index.array : Array.from({ length: pos.count }, (_, i) => i), index = [];
+    for (let i = 0; i < src.length; i += 3) { const a = map[src[i]], b = map[src[i + 1]], c = map[src[i + 2]]; if (a !== b && b !== c && a !== c) index.push(a, b, c); }
+    return { keep, index };
+  });
+  const worldVerts = o => {
+    const pos = o.geometry.attributes.position, morph = o.geometry.morphAttributes.position, keep = welds[meshes.indexOf(o)].keep, outp = new Float32Array(keep.length * 3);
+    keep.forEach((i, n) => {
+      v.fromBufferAttribute(pos, i);
+      if (morph) morph.forEach((m, k) => { v.x += m.getX(i) * o.morphTargetInfluences[k]; v.y += m.getY(i) * o.morphTargetInfluences[k]; v.z += m.getZ(i) * o.morphTargetInfluences[k]; });
+      v.applyMatrix4(o.matrixWorld); outp[n * 3] = v.x; outp[n * 3 + 1] = v.y; outp[n * 3 + 2] = v.z;
+    });
+    return outp;
+  };
+  const centre = a => { const c = [0, 0, 0]; for (let i = 0; i < a.length; i++) c[i % 3] += a[i] / (a.length / 3); return c; };
+  const boneOf = o => { let n = o.parent; while (n && !n.userData.bone) n = n.parent; return n.name; };
+  const pose = ch => { const p = Object.assign({}, mascot.REST); mascot.FACE.forEach(c => { p[c] = c === ch ? 1 : 0; }); mascot.poseAt('idle', 0); mascot.applyPose(p); mascot.root.updateMatrixWorld(true); };
+
+  pose(null);                                               // rest: body at REST, every face channel at 0
+  const basis = meshes.map(worldVerts);
+  const rig = { name: mascot.config.name, fps: FPS, up: 'Y', material: mascot.config.material, faceChannels: mascot.FACE,
+    bones: Object.keys(mascot.bones).map(n => { const b = mascot.bones[n]; return { name: n, parent: n === 'root' ? null : boneOf(b), rest: round(b.matrixWorld.elements) }; }),
+    meshes: meshes.map((o, k) => ({ name: o.name, bone: boneOf(o), slot: o.userData.slot,
+      color: '#' + (o.material.color ? o.material.color.getHexString() : 'ffffff'),
+      positions: round(basis[k]),
+      index: welds[k].index,
+      shapeKeys: {} })),
+    clips: [], verify: [] };
+  for (const ch of mascot.FACE) {
+    pose(ch);
+    meshes.forEach((o, k) => { const w = worldVerts(o); for (let i = 0; i < w.length; i++) if (Math.abs(w[i] - basis[k][i]) > 1e-5) { rig.meshes[k].shapeKeys[ch] = round(w); break; } });
+  }
+  for (const name in mascot.clips) {
+    const c = mascot.clips[name], clip = { name, loop: !!c.loop, bones: {}, shapes: {} };
+    rig.bones.forEach(b => { clip.bones[b.name] = []; }); mascot.FACE.forEach(ch => { clip.shapes[ch] = []; });
+    const n = Math.round(c.duration * FPS), checks = [0, Math.round(n * .3), Math.round(n * .6)];
+    clip.frames = mascot.sample(name, FPS, (i, t, p) => {
+      rig.bones.forEach(b => { clip.bones[b.name].push.apply(clip.bones[b.name], round(mascot.bones[b.name].matrixWorld.elements)); });
+      mascot.FACE.forEach(ch => clip.shapes[ch].push(Math.round(p[ch] * 1e4) / 1e4));
+      if (checks.includes(i)) { const centres = {}; meshes.forEach(o => { centres[o.name] = round(centre(worldVerts(o))); }); rig.verify.push({ clip: name, frame: i, centres }); }
+    });
+    rig.clips.push(clip);
+  }
+  return rig;
+}
+window.mascotHandoff = { bakeClips, exportGLB, exportRig };
+if (params.has('handoff')) {
+  $('handoff').hidden = false;
+  $('dl-glb').addEventListener('click', async () => {
+    try { save(mascot.config.name.toLowerCase() + '.glb', new Blob([await exportGLB()], { type: 'model/gltf-binary' })); }
+    catch (err) { alert('GLB export needs the page that loads three.js from the CDN. Open the page from before the inline step.\n\n' + err.message); }
+  });
+  $('dl-rig').addEventListener('click', () => save(mascot.config.name.toLowerCase() + '-rig.json', new Blob([JSON.stringify(exportRig())], { type: 'application/json' })));
+}
+
+// ======================================================================
+// QA: ?qa draws a contact sheet and a test report. ?qa=rig and ?qa=glb
+// print the export data, so a headless browser can read them.
+// ======================================================================
+async function runQA(mode) {
+  document.body.classList.add('qa'); const host = $('qa'); host.hidden = false;
+  const pre = (id, text) => { const p = el('pre', { id }); p.textContent = text; host.append(p); };
+  if (mode === 'rig') { pre('qa-data', JSON.stringify(exportRig())); document.title = 'QA done'; return; }
+  if (mode === 'glb') {
+    const bytes = new Uint8Array(await exportGLB()); let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    pre('qa-data', btoa(s)); document.title = 'QA done'; return;
+  }
+  const names = Object.keys(mascot.clips), cols = 6, S = 170, label = 20;
+  const sheet = el('canvas', { width: cols * S, height: (names.length + 1) * (S + label) }), g = sheet.getContext('2d');
+  g.fillStyle = bg; g.fillRect(0, 0, sheet.width, sheet.height); g.fillStyle = '#222'; g.font = '13px system-ui, sans-serif';
+  renderer.setPixelRatio(1);
+  const shot = (px, x, y) => { renderer.setSize(px, px, false); frameCamera(1); renderer.render(scene, camera); g.drawImage(canvas, x, y, px, px); };
+  names.forEach((name, row) => {
+    const c = mascot.clips[name], y = row * (S + label);
+    for (let j = 0; j < cols; j++) {
+      const t = c.duration * j / (c.loop ? cols : cols - 1);
+      mascot.poseAt(name, t); shot(S, j * S, y + label);
+      g.fillText(j === 0 ? name + '  ' + t.toFixed(2) + ' s' : t.toFixed(2) + ' s', j * S + 6, y + 15);
+    }
+  });
+  // silhouette at small sizes: it must still read
+  const y = names.length * (S + label); g.fillText('silhouette at 128, 64, 32 and 16 px; front, turned, side', 6, y + 15);
+  scene.overrideMaterial = new THREE.MeshBasicMaterial({ color: 0x111111 }); ground.visible = false;
+  let x = 6;
+  for (const yaw of [0, .7, Math.PI / 2]) { turntable.rotation.y = yaw; mascot.poseAt('idle', 0); for (const px of [128, 64, 32, 16]) { shot(px, x, y + label + 8); x += px + 10; } x += 16; }
+  scene.overrideMaterial = null; ground.visible = true; turntable.rotation.y = 0;
+  host.append(sheet); pre('qa-report', JSON.stringify(mascot.selfTest(), null, 2)); document.title = 'QA done';
+}
+
+if (params.has('qa')) runQA(params.get('qa')).catch(err => { $('qa').hidden = false; $('qa').append(el('pre', { id: 'qa-error' }, String(err && err.stack || err))); document.title = 'QA failed'; });
+else requestAnimationFrame(frame);
+</script>
+</body>
+</html>
