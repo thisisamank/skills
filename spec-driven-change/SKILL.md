@@ -14,6 +14,6 @@ description: Keep code, SPEC.md and PRD.md in step, with requirement IDs and ASD
 7. Commit with the requirement ID (see `ship-it`).
 
 ## Writing
-- SPEC, PRD, AGENTS.md, reports and commit bodies follow `ste-writing`.
+- SPEC, PRD, AGENTS.md, reports and commit bodies follow the STE writing rules in `~/.claude/CLAUDE.md`.
 - No inline code comments.
 - Easy to read beats complete.
