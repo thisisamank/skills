@@ -1,6 +1,6 @@
 ---
 name: low-level-design
-description: How an agent should writes code - order of work, object modelling, APIs, data structures, concurrency, extensibility and tests. Use when writing, designing or refactoring non-trivial code, modelling a new domain, adding a feature to existing classes, or choosing a design pattern.
+description: How to write, review and restructure code - order of work, object modelling, APIs, data structures, concurrency, tests and patterns, plus the repo standard (TypeScript, Next.js on vinext, folders, tokens, explicit states) and the ponytail review. Use when writing, designing or refactoring non-trivial code, modelling a domain, choosing a pattern, reviewing a diff, restructuring a codebase, running a migration, or hunting implicit state machines.
 ---
 
 # Low level design
@@ -14,6 +14,7 @@ Read a reference only when its trigger applies.
 
 | File | Read it when |
 |---|---|
+| `references/structure-pass.md` | A code review, a diff cleanup, a restructure, a migration, or a hunt for implicit state machines. It has the repo standard (TypeScript, folders, tokens, no inline comments) and the review steps. |
 | `references/typescript.md` | The repo is TypeScript. It maps every rule to TypeScript and has the code for the concurrency recipes. |
 | `references/patterns.md` | Before you add a design pattern. Each pattern has its trigger and the cases where it is wrong. |
 | `references/smells.md` | Before you finish a change, and during a review. Each smell has its fix. |
@@ -135,4 +136,4 @@ For a product that engineers use (a queue, a cache, a rate limiter), start from 
 - Do not optimise for perfection where a greedy approach is good enough. Say what the approach cannot do.
 - Do not write deep domain rules that are not the point. Stub them and confirm scope.
 
-For a review or restructure, use `code-structure-pass`. These rules are the standard it applies to logic and object design.
+For a review or restructure, read `references/structure-pass.md`. These rules are the standard it applies to logic and object design.
