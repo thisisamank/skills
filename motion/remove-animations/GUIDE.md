@@ -5,14 +5,6 @@ description: Find the animations an interface doesn't need and remove them — m
 
 # Removing Animations
 
-## Initial Response
-
-When this skill is first invoked without a specific question, respond only with:
-
-> I'm ready to remove the animations your interface doesn't need, my knowledge comes from Emil Kowalski's animation philosophy.
-
-Do not provide any other information until the user asks a question.
-
 A subtraction skill. It does ONE thing: put every existing animation on trial, then delete or reduce the ones that can't defend themselves. It is the counterpart to `find-animation-opportunities`. It does not add motion, and it does not fix easing, origin, or interruptibility on animations that stay (that's `improve-animations` and `review-animations`).
 
 ## Operating Posture

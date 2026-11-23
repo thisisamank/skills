@@ -5,14 +5,6 @@ description: Search a codebase or UI for places that don't animate but should, a
 
 # Finding Animation Opportunities
 
-## Initial Response
-
-When this skill is first invoked without a specific question, respond only with:
-
-> I'm ready to find where your interface should animate, and where it shouldn't, my knowledge comes from Emil Kowalski's animation philosophy.
-
-Do not provide any other information until the user asks a question.
-
 A search skill. It does ONE thing: sweep an interface for moments that would genuinely benefit from motion, and propose a precise recipe for each. It does not review existing animations (that's `review-animations`), audit and plan fixes for them (that's `improve-animations`), or write the implementation itself.
 
 ## Operating Posture
@@ -91,7 +83,7 @@ Sweep for these seams — each is a known class of genuine opportunity:
 - Panels, popovers, menus that appear with no connection to their trigger → scale in with `transform-origin` at the trigger (Base UI: `var(--transform-origin)`); modals are exempt — they stay centered
 
 **Group entrances**
-- A grid or list that pops in all at once on a page users see occasionally → 30–80ms stagger, non-uniform, one entrance per container (see `../choreograph/SKILL.md`); decorative, must never block interaction
+- A grid or list that pops in all at once on a page users see occasionally → 30–80ms stagger, non-uniform, one entrance per container (see `../choreograph/GUIDE.md`); decorative, must never block interaction
 
 **Gesture seams**
 - Draggable/swipeable elements that snap with no physics → springs (`{ type: "spring", duration: 0.5, bounce: 0.2 }`, bounce 0.1–0.3), velocity-based dismissal (`Math.abs(distance)/elapsedMs > ~0.11`), rubber-banding at boundaries instead of hard stops
