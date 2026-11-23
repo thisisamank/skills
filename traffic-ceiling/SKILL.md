@@ -1,6 +1,7 @@
 ---
 name: traffic-ceiling
 description: Measure how much organic traffic a product can get at the extreme, and what that is worth. Pulls Search Console for the floor, drives Google Keyword Planner through the user's own Brave or Chrome for the market size, filters out competitor and other-brand queries, and turns the sum into a ceiling and a revenue forecast. Use when the user asks how big the market is, what traffic the site can reach, whether SEO is worth it, or what to expect from a product organically.
+disable-model-invocation: true
 ---
 
 # Traffic ceiling

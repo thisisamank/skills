@@ -1,6 +1,7 @@
 ---
 name: new-saas-bootstrap
 description: Start a new SaaS product on Cloudflare Workers with research, PRD, SPEC and AGENTS.md. Use when the user shares a product idea and wants it bootstrapped.
+disable-model-invocation: true
 ---
 
 # New SaaS bootstrap

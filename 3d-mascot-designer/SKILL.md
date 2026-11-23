@@ -1,6 +1,7 @@
 ---
 name: 3d-mascot-designer
 description: Design and build an animated 3D mascot for a product - discovery, character brief, 2D SVG concepts, turnaround and expression sheets, a Three.js build from primitives, an animation library with a state machine, and one shareable interactive preview page. On request it also gives GLB export, a Blender rebuild script and React / Three.js / Unity integration. Use whenever the user asks for a mascot, brand character, product character, animated helper or guide, a 3D character for a website, app, video or stickers, or wants to animate, rig, export or integrate a mascot they already have - also when they do not say "3D".
+disable-model-invocation: true
 ---
 
 # 3D mascot designer

@@ -1,6 +1,7 @@
 ---
 name: ship-it
 description: Commit, merge and deploy with micro commits, a single main branch and no AI attribution. Use when the user asks to commit, merge, deploy, ship, or bring production up to date.
+disable-model-invocation: true
 ---
 
 # Ship it

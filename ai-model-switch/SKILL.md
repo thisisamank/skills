@@ -1,6 +1,7 @@
 ---
 name: ai-model-switch
 description: Compare AI models on the real product flow, then switch provider safely. Use when the user wants to change AI provider or model, compare models, or know what AI costs.
+disable-model-invocation: true
 ---
 
 # AI model switch

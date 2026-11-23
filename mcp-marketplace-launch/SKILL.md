@@ -1,6 +1,7 @@
 ---
 name: mcp-marketplace-launch
 description: Build an MCP server for a product and list it on the Claude and ChatGPT directories and other MCP registries. Use when the user wants an MCP server, OAuth for MCP clients, a reviewer account, or a marketplace listing.
+disable-model-invocation: true
 ---
 
 # MCP and marketplace launch
