@@ -1,6 +1,6 @@
 ---
 name: feature-pushback
-description: Discuss a feature with a direct opinion before building it, and push back on features with no demand. Use when the user proposes a feature, asks what to build next, or asks for a plan before building.
+description: Give a direct opinion on one specific feature before building it, and push back when it has no demand or does not fit. Use when the user proposes or describes a feature, asks "should we add X?", or asks for a plan for a feature before building it. For "where does this product stand and what stage is next", use product-lifecycle.
 ---
 
 # Feature discussion

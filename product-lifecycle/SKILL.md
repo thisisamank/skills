@@ -1,11 +1,13 @@
 ---
 name: product-lifecycle
-description: The full path of a SaaS product from idea to a launched, priced, findable and growing product, with the skill to use at each stage. Use when starting a product, when asking "what is next for this product?", or to find where a product stands and what stage comes after.
+description: The stages of a SaaS product from idea to launched, priced, findable and growing, with the skill to use at each stage. Use when starting a product, or to find which stage a product is at and which stage comes after (from PRD.md and SPEC.md). For an opinion on one specific feature, use feature-pushback.
 ---
 
 # Product lifecycle
 
 A product moves through these stages in order. Later stages loop. Each stage names the skill or playbook that does the work.
+
+Some of these skills are hand-called: `ship-it`, `pricing-saas`, `traffic-ceiling`, `mcp-marketplace-launch`, `new-saas-bootstrap`, `ai-model-switch`. Claude cannot load them. When a stage needs one, tell the user to run it (for example `/ship-it`).
 
 This skill describes what the user of the product experiences at each stage. It does not choose the architecture.
 
@@ -64,7 +66,7 @@ Before you use one:
 - Every screen feels fast. Measure, then fix the slowest paths.
 - Every screen works at three widths, in dark mode, and on a phone.
 - The code stays easy to change, so the next stages stay fast.
-- Skills: `code-structure-pass`, `ui-rules`. For a mobile app, `flutter-app` (structure, state, testing layers).
+- Skills: `low-level-design` (its `references/structure-pass.md`), `ui-rules`. For a mobile app, `flutter-app` (structure, state, testing layers).
 
 ## 7. Pricing and billing
 - Measure the unit economics and the cost at 100 to 1,000,000 users. Get a plan recommendation as an HTML report.
