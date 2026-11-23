@@ -24,7 +24,7 @@ Take a product from "we want a mascot" to a live 3D character on a page the user
 | `references/handoff.md` | Step 8: GLB, Blender, React / Three.js / Unity. Read it only when the user asks for handoff. |
 | `assets/sheet-template.html` | Page for SVG concepts, turnaround and expressions. It adds a small black silhouette row to each drawing. |
 | `assets/preview-template.html` | The working 3D mascot page: rig, materials, light, shadow, 7 clips, state machine, panel, tests, exports. |
-| `scripts/mascot_tools.py` | `inline` (one self-contained file), `qa` (contact sheet and self-test), `shot` (screenshots), `module`, `rig`, `glb`. |
+| `scripts/mascot_tools.py` | `inline` (one self-contained file), `qa` (contact sheet and self-test), `shot` (screenshots), `module`, `rig`, `glb`, `cleanup` (kill all headless browsers it started). |
 | `scripts/rebuild_in_blender.py` | Rebuilds the mascot in Blender with bones, shape keys and keyframed actions. |
 
 ## Step 1. Discovery
@@ -111,6 +111,18 @@ Do these before you deliver. Fix what fails, then run them again.
 | Animations loop cleanly | The self-test in the `qa` output. It reports a jump or a hitch at the loop seam, and one-shot clips that do not start or end at rest. |
 | No parts clip through each other | The self-test measures the pairs in `NO_CLIP`. Also look at every frame of the contact sheet. The test only knows the pairs you list. |
 | The page works on mobile | `mascot_tools.py shot page.html phone.png --mobile`, then look at it: the mascot is fully in view, no button is cut, the panel scrolls. |
+
+### Headless browsers: always kill them
+
+`qa`, `shot`, `rig` and `glb` start a headless browser that draws WebGL on the CPU. One browser that stays open uses one to two full CPU cores until something kills it. Many left-over browsers can fill all CPUs, all RAM and swap. This happened: 46 browsers were left open for 10 hours.
+
+- Run these commands in the foreground, one at a time. Give the shell command a timeout of at least 200 s (200000 ms). `qa` can wait 150 s, and a tool timeout kills the script before it can close its browser.
+- Do not run them in the background, and do not start a second run while the first one is still running.
+- After the last headless command, and always before you deliver or stop (also after a failure, a timeout or an interrupt), run `python3 scripts/mascot_tools.py cleanup`.
+- Then make sure that no browser stays open: `pgrep -fc 'mascot-browser-'` must print `0`. If it does not, run `pkill -9 -f 'user-data-dir=.*mascot-browser-'` and do the check again.
+- Never kill the user's own browser. Kill only processes that use a `mascot-browser-*` profile.
+
+The script also kills its browser (the whole process group) when it ends, fails or gets SIGTERM, and each new run kills browsers that earlier runs left. These protections do not work when the script gets SIGKILL and no new run follows. Thus the `cleanup` step is always necessary.
 
 The `qa` and `shot` commands need a Chrome-family browser. If there is none, open the page with `?qa` yourself if you can. If you cannot run a browser at all, check the clip code by hand (loop periods divide the duration, one-shots start and end at rest), tell the user which checks you could not run, and ask them to open the page on a phone.
 

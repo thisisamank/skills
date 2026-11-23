@@ -7,11 +7,15 @@
   shot    PAGE OUT.png      Headless browser: screenshot of any page. --mobile for a phone size, --full for the whole page.
   rig     PAGE OUT.json     Headless browser: save the rig data that rebuild_in_blender.py reads.
   glb     PAGE OUT.glb      Headless browser: save a GLB with all clips. Needs the page from before "inline".
+  cleanup                   Kill every headless browser this script started and delete its profile folder.
+
+Every headless command first kills browsers left behind by earlier runs that were killed or timed out,
+and kills its own browser (the whole process group) when it ends, fails or gets a signal.
 
 The headless commands need a Chrome-family browser (Chrome, Chromium, Brave, Edge).
 Only the Python standard library is used.
 """
-import argparse, base64, json, os, pathlib, re, shutil, socket, struct, subprocess, sys, tempfile, time, urllib.parse, urllib.request
+import argparse, atexit, base64, glob, json, os, pathlib, re, shutil, signal, socket, struct, subprocess, sys, tempfile, time, urllib.parse, urllib.request
 
 THREE_VERSION = "0.170.0"   # the last release with a one-file module build; "inline" depends on that
 THREE_URL = "https://cdn.jsdelivr.net/npm/three@%s/build/three.module.min.js" % THREE_VERSION
@@ -89,19 +93,116 @@ def find_browser():
     die("no Chrome-family browser found. Set MASCOT_BROWSER to its path, or do this check by hand.")
 
 
+PROFILE_PREFIX = "mascot-browser-"
+
+
+def _profile_of(pid):
+    """The mascot profile folder a process uses, or None. Linux only (reads /proc)."""
+    try:
+        # Chrome rewrites its process title, so the arguments may be joined by spaces instead of NUL bytes.
+        line = open("/proc/%d/cmdline" % pid, "rb").read().replace(b"\0", b" ").decode(errors="replace")
+    except OSError:
+        return None
+    m = re.search(r"--user-data-dir=(\S*" + re.escape(PROFILE_PREFIX) + r"\S*)", line)
+    return m.group(1) if m else None
+
+
+def _owner_alive(profile):
+    """A profile is in use while the Python process that made it is alive. It writes its pid to owner.pid."""
+    try:
+        pid = int(open(os.path.join(profile, "owner.pid")).read())
+        os.kill(pid, 0)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def _procs():
+    """{pid: (ppid, pgid)} for every process. Linux only."""
+    out = {}
+    for d in os.listdir("/proc"):
+        if d.isdigit():
+            try:
+                f = open("/proc/%s/stat" % d).read().rsplit(")", 1)[1].split()
+                out[int(d)] = (int(f[1]), int(f[2]))
+            except (OSError, IndexError, ValueError):
+                pass
+    return out
+
+
+def _kill_tree(roots, procs):
+    """SIGKILL the roots, their process groups and all their descendants. Renderer and GPU children do not
+    carry --user-data-dir, so matching on the profile alone misses them. Returns the number killed."""
+    groups = {procs[r][1] for r in roots if r in procs and procs[r][1] > 1 and procs[r][1] != os.getpgrp()}
+    doomed, grew = set(roots) | {p for p, (_, g) in procs.items() if g in groups}, True
+    while grew:
+        more = {p for p, (pp, _) in procs.items() if pp in doomed and p not in doomed}
+        doomed |= more
+        grew = bool(more)
+    doomed.discard(os.getpid())
+    n = 0
+    for pid in doomed:
+        try:
+            os.kill(pid, signal.SIGKILL)
+            n += 1
+        except OSError:
+            pass
+    return n
+
+
+def reap(everything=False):
+    """Kill mascot browsers whose owner is gone (or all of them) and delete their profiles. Returns the count."""
+    killed, profiles = 0, set()
+    if os.path.isdir("/proc"):
+        roots = []
+        for pid in _procs():
+            prof = _profile_of(pid) if pid != os.getpid() else None
+            if prof and (everything or not _owner_alive(prof)):
+                profiles.add(prof)
+                roots.append(pid)
+        if roots:
+            killed = _kill_tree(roots, _procs())
+    for root in {tempfile.gettempdir(), "/tmp", "/var/tmp"}:
+        for prof in glob.glob(os.path.join(root, PROFILE_PREFIX + "*")):
+            fresh = time.time() - os.path.getmtime(prof) < 60   # another run may be writing owner.pid right now
+            if everything or (not fresh and not _owner_alive(prof)):
+                profiles.add(prof)
+    for prof in profiles:
+        shutil.rmtree(prof, ignore_errors=True)
+    if everything and not os.path.isdir("/proc"):   # macOS and others: no /proc, match the command line instead
+        if subprocess.run(["pkill", "-9", "-f", "user-data-dir=.*" + PROFILE_PREFIX], capture_output=True).returncode == 0:
+            killed += 1
+    return killed
+
+
+def _raise_exit(signum, frame):
+    sys.exit(128 + signum)   # turns SIGTERM / SIGHUP into SystemExit, so "with" blocks and atexit still close the browser
+
+
+for _sig in (signal.SIGTERM, getattr(signal, "SIGHUP", None)):
+    if _sig is not None:
+        signal.signal(_sig, _raise_exit)
+
+
 class Browser:
     """A headless browser driven over the DevTools protocol. The one-shot flags (--screenshot,
     --dump-dom) do not work in every Chrome-family browser, so this talks to it directly."""
 
     def __init__(self, width, height, scale=1, mobile=False):
-        self.profile = tempfile.mkdtemp(prefix="mascot-browser-")
+        reap()   # browsers left by earlier runs that were killed before they could clean up
+        self.proc = None
+        self.profile = tempfile.mkdtemp(prefix=PROFILE_PREFIX)
+        pathlib.Path(self.profile, "owner.pid").write_text(str(os.getpid()))
+        atexit.register(self.close)
         cmd = [find_browser(), "--headless=new", "--no-first-run", "--no-default-browser-check", "--hide-scrollbars",
+               "--disable-crash-reporter", "--disable-breakpad",
                "--user-data-dir=" + self.profile, "--remote-debugging-port=0",
                "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist",
                "--window-size=%d,%d" % (width, height + 200), "about:blank"]
         if hasattr(os, "geteuid") and os.geteuid() == 0:
             cmd.insert(1, "--no-sandbox")
-        self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Own process group, so close() can kill the GPU, renderer and crashpad children too, not only the main process.
+        self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
         port_file = os.path.join(self.profile, "DevToolsActivePort")
         deadline = time.time() + 30
         while not os.path.exists(port_file) or not open(port_file).read().strip():
@@ -205,11 +306,23 @@ class Browser:
         pathlib.Path(out).write_bytes(base64.b64decode(data))
 
     def close(self):
-        try:
-            self.proc.terminate()
-            self.proc.wait(timeout=10)
-        except Exception:
-            self.proc.kill()
+        """Kill the browser and every process it started, then delete the profile. Safe to call twice."""
+        if self.proc is not None and self.proc.poll() is None:
+            for sig, wait in ((signal.SIGTERM, 5), (signal.SIGKILL, 5)):
+                try:
+                    os.killpg(self.proc.pid, sig)
+                    self.proc.wait(timeout=wait)
+                    break
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
+        if self.proc is not None:
+            try:
+                os.killpg(self.proc.pid, signal.SIGKILL)   # children that outlived the main process
+            except OSError:
+                pass
+        if os.path.isdir("/proc"):   # anything that left the group but still uses this profile, and its children
+            procs = _procs()
+            _kill_tree([p for p in procs if p != os.getpid() and _profile_of(p) == self.profile], procs)
         shutil.rmtree(self.profile, ignore_errors=True)
 
     def __enter__(self):
@@ -275,9 +388,15 @@ def cmd_glb(a):
     print("wrote %s (%d KB)" % (a.out, len(data) // 1024))
 
 
+def cmd_cleanup(a):
+    n = reap(everything=True)
+    print("cleanup: killed %d headless browser process(es), deleted the %s* profiles" % (n, PROFILE_PREFIX))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("cleanup").set_defaults(fn=cmd_cleanup)
     for name, fn in [("inline", cmd_inline), ("module", cmd_module), ("qa", cmd_qa), ("shot", cmd_shot), ("rig", cmd_rig), ("glb", cmd_glb)]:
         p = sub.add_parser(name)
         p.add_argument("page")
